@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>일산호수마라톤클럽 대회 일정</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f0e8;
+    --ink: #1a1208;
+    --accent: #c8501a;
+    --accent2: #3a6b35;
+    --muted: #8a7a65;
+    --card: #fffdf8;
+    --border: #d4c9b0;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Noto Sans KR', sans-serif;
+    min-height: 100vh;
+    padding-bottom: 60px;
+  }
+  header {
+    background: var(--ink);
+    color: var(--bg);
+    padding: 28px 20px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 180px; height: 180px;
+    border-radius: 50%;
+    border: 2px solid rgba(200,80,26,0.3);
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; left: 60px;
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    border: 1px solid rgba(200,80,26,0.2);
+  }
+  .header-label { font-size: 10px; letter-spacing: 3px; color: var(--accent); margin-bottom: 6px; }
+  .header-title { font-family: 'Noto Serif KR', serif; font-size: 22px; font-weight: 900; line-height: 1.3; margin-bottom: 4px; }
+  .header-sub { font-size: 12px; color: rgba(245,240,232,0.5); font-weight: 300; }
+
+  .filter-bar {
+    display: flex; gap: 8px; padding: 16px 20px;
+    overflow-x: auto; scrollbar-width: none;
+    background: var(--ink); border-bottom: 3px solid var(--accent);
+  }
+  .filter-bar::-webkit-scrollbar { display: none; }
+  .filter-btn {
+    flex-shrink: 0; padding: 6px 14px; border-radius: 20px;
+    border: 1px solid rgba(245,240,232,0.2); background: transparent;
+    color: rgba(245,240,232,0.6); font-size: 12px;
+    font-family: 'Noto Sans KR', sans-serif; cursor: pointer; transition: all 0.2s;
+  }
+  .filter-btn.active { background: var(--accent); border-color: var(--accent); color: white; font-weight: 500; }
+
+  .info-banner {
+    margin: 16px 20px; background: var(--ink); border-radius: 10px;
+    padding: 12px 16px; display: flex; align-items: center; gap: 10px;
+  }
+  .info-banner .icon { font-size: 18px; }
+  .info-banner .text { font-size: 11px; color: rgba(245,240,232,0.7); line-height: 1.5; }
+  .info-banner .text strong { color: var(--bg); }
+
+  .loading { text-align: center; padding: 60px 20px; color: var(--muted); font-size: 13px; }
+  .loading .spinner {
+    width: 32px; height: 32px; border: 3px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin 0.8s linear infinite; margin: 0 auto 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-msg {
+    margin: 20px; padding: 16px; background: #fff0ed;
+    border: 1px solid #f5c6bb; border-radius: 10px;
+    color: var(--accent); font-size: 12px; text-align: center;
+  }
+
+  .timeline-section { padding: 24px 20px 0; }
+  .month-label { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .month-label .month-num { font-family: 'Noto Serif KR', serif; font-size: 32px; font-weight: 900; color: var(--accent); line-height: 1; }
+  .month-label .month-kr { font-size: 13px; color: var(--muted); font-weight: 300; }
+  .month-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .race-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; margin-bottom: 10px; overflow: hidden;
+    display: flex; transition: transform 0.15s; position: relative;
+  }
+  .race-card:active { transform: scale(0.98); }
+  .race-card.recommended .card-left { background: var(--accent2); }
+  .race-card.ended { opacity: 0.5; }
+
+  .card-left {
+    width: 56px; flex-shrink: 0; background: var(--muted);
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; padding: 14px 6px;
+  }
+  .card-left .day-num { font-family: 'Noto Serif KR', serif; font-size: 22px; font-weight: 900; color: white; line-height: 1; }
+  .card-left .day-name { font-size: 10px; color: rgba(255,255,255,0.7); margin-top: 2px; }
+
+  .card-body { flex: 1; padding: 12px 14px; }
+  .card-tags { display: flex; gap: 5px; margin-bottom: 6px; flex-wrap: wrap; }
+  .tag { font-size: 9px; padding: 2px 7px; border-radius: 10px; font-weight: 500; letter-spacing: 0.5px; }
+  .tag-dist { background: #e8f0e8; color: var(--accent2); border: 1px solid #c8dcc8; }
+  .tag-type { background: #f5ece8; color: var(--accent); border: 1px solid #e8d0c8; }
+  .tag-rec  { background: #1a1208; color: var(--bg); }
+
+  .race-name { font-family: 'Noto Serif KR', serif; font-size: 15px; font-weight: 700; line-height: 1.3; margin-bottom: 5px; }
+  .race-meta { font-size: 11px; color: var(--muted); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .reg-info { margin-top: 6px; font-size: 10px; color: var(--muted); }
+
+  .reg-status { position: absolute; top: 10px; right: 48px; }
+  .reg-badge { font-size: 9px; padding: 3px 8px; border-radius: 10px; font-weight: 700; letter-spacing: 0.5px; }
+  .reg-badge.open   { background: #e8f5e8; color: var(--accent2); border: 1px solid var(--accent2); }
+  .reg-badge.closed { background: #f0f0f0; color: #999; border: 1px solid #ddd; }
+  .reg-badge.ended  { background: #f0f0f0; color: #bbb; border: 1px solid #e0e0e0; }
+
+  .card-action { display: flex; align-items: center; justify-content: center; padding: 0 12px; border-left: 1px solid var(--border); flex-shrink: 0; }
+  .action-btn {
+    width: 32px; height: 32px; border-radius: 50%; background: var(--ink);
+    color: var(--bg); display: flex; align-items: center; justify-content: center;
+    font-size: 14px; text-decoration: none; transition: background 0.2s;
+  }
+  .action-btn:active { background: var(--accent); }
+  .action-btn.no-link { background: var(--border); cursor: default; pointer-events: none; }
+
+  .same-day-note { font-size: 10px; color: var(--accent); padding: 2px 14px 10px 70px; }
+  .update-time { text-align: center; font-size: 10px; color: var(--muted); padding: 24px 20px; letter-spacing: 1px; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-label">🐢 일산호수마라톤클럽</div>
+  <div class="header-title">2025 대회 일정</div>
+  <div class="header-sub">접수일 · 대회일 · 연유추천 한눈에</div>
+</header>
+
+<div class="filter-bar">
+  <button class="filter-btn active" data-filter="전체">전체</button>
+  <button class="filter-btn" data-filter="접수중">접수중</button>
+  <button class="filter-btn" data-filter="접수예정">접수예정</button>
+  <button class="filter-btn" data-filter="마감">마감</button>
+  <button class="filter-btn" data-filter="연유추천">🐢 연유추천</button>
+  <button class="filter-btn" data-filter="풀">풀마라톤</button>
+  <button class="filter-btn" data-filter="하프">하프</button>
+  <button class="filter-btn" data-filter="트레일">트레일</button>
+</div>
+
+<div class="info-banner">
+  <div class="icon">📋</div>
+  <div class="text">
+    <strong>접수일과 대회일이 달라요!</strong><br>
+    인기 대회는 접수 시작 즉시 마감될 수 있어요
+  </div>
+</div>
+
+<div id="content">
+  <div class="loading">
+    <div class="spinner"></div>
+    대회 일정을 불러오는 중...
+  </div>
+</div>
+
+<div class="update-time" id="update-time"></div>
+
+<script>
+const MONTH_NAMES = ['','January','February','March','April','May','June','July','August','September','October','November','December'];
+const DAY_NAMES = ['일','월','화','수','목','금','토'];
+
+let allRaces = [];
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  const headers = lines[0].split(',').map(h => h.trim().replace(/"/g,''));
+  return lines.slice(1).map(line => {
+    const cols = [];
+    let cur = '', inQ = false;
+    for (let c of line) {
+      if (c === '"') { inQ = !inQ; }
+      else if (c === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
+      else cur += c;
+    }
+    cols.push(cur.trim());
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = (cols[i] || '').replace(/"/g,''));
+    return obj;
+  }).filter(r => r['대회명']);
+}
+
+function parseDate(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d)) return null;
+  return { year: d.getFullYear(), month: d.getMonth()+1, day: d.getDate(), dayName: DAY_NAMES[d.getDay()] };
+}
+
+function badgeHTML(status) {
+  if (status === '접수중') return `<span class="reg-badge open">접수중</span>`;
+  if (status === '마감')   return `<span class="reg-badge ended">마감</span>`;
+  return `<span class="reg-badge closed">접수예정</span>`;
+}
+
+function regInfoHTML(race) {
+  const status = race['접수상태'] || '';
+  const startDate = race['접수시작일'] || '';
+  const expectDate = race['접수예정일'] || '';
+  if (status === '접수중' && startDate)   return `📅 접수 중 · 시작일 ${startDate}`;
+  if (status === '접수예정' && expectDate) return `📅 접수 예정 · ${expectDate} 오픈`;
+  if (status === '마감') return `✅ 접수 마감`;
+  return '';
+}
+
+function cardHTML(race, showSameDayNote) {
+  const date = parseDate(race['대회일']);
+  const isRec = race['연유추천'] === 'TRUE';
+  const status = race['접수상태'] || '';
+  const link = race['접수링크'] || '';
+  const note = race['비고'] || '';
+  const dayNum = date ? String(date.day).padStart(2,'0') : '--';
+  const dayName = date ? date.dayName : '';
+
+  const tags = [];
+  if (race['거리태그']) tags.push(`<span class="tag tag-dist">${race['거리태그']}</span>`);
+  if (race['유형'])     tags.push(`<span class="tag tag-type">${race['유형']}</span>`);
+  if (isRec)            tags.push(`<span class="tag tag-rec">🐢 연유추천</span>`);
+
+  const actionBtn = link
+    ? `<a href="${link}" target="_blank" class="action-btn">→</a>`
+    : `<span class="action-btn no-link">→</span>`;
+
+  const sameDayNote = showSameDayNote ? `<div class="same-day-note">⚠ 같은 날 열리는 대회가 있어요</div>` : '';
+
+  return `
+    <div class="race-card ${isRec ? 'recommended' : ''} ${status === '마감' ? 'ended' : ''}"
+         data-status="${status}" data-type="${race['유형'] || ''}" data-rec="${isRec}"
+         data-dist="${race['거리태그'] || ''}">
+      <div class="card-left">
+        <div class="day-num">${dayNum}</div>
+        <div class="day-name">${dayName}</div>
+      </div>
+      <div class="card-body">
+        <div class="card-tags">${tags.join('')}</div>
+        <div class="race-name">${race['대회명']}</div>
+        <div class="race-meta">
+          <span>📍 ${race['장소'] || ''}</span>
+          <span>🏃 ${race['종목'] || ''}</span>
+        </div>
+        <div class="reg-info">${regInfoHTML(race)}</div>
+        ${note ? `<div class="reg-info" style="color:var(--accent)">📌 ${note}</div>` : ''}
+      </div>
+      <div class="reg-status">${badgeHTML(status)}</div>
+      <div class="card-action">${actionBtn}</div>
+    </div>
+    ${sameDayNote}
+  `;
+}
+
+function render(races) {
+  if (!races.length) {
+    document.getElementById('content').innerHTML = '<div class="error-msg">해당하는 대회가 없어요</div>';
+    return;
+  }
+  const byMonth = {};
+  races.forEach(race => {
+    const date = parseDate(race['대회일']);
+    if (!date) return;
+    const key = `${date.year}-${String(date.month).padStart(2,'0')}`;
+    if (!byMonth[key]) byMonth[key] = { year: date.year, month: date.month, races: [] };
+    byMonth[key].races.push(race);
+  });
+
+  function hasSameDay(races, idx) {
+    const d = parseDate(races[idx]['대회일']);
+    if (!d) return false;
+    return races.some((r, i) => {
+      if (i === idx) return false;
+      const rd = parseDate(r['대회일']);
+      return rd && rd.day === d.day && rd.month === d.month;
+    });
+  }
+
+  let html = '';
+  Object.keys(byMonth).sort().forEach(key => {
+    const { year, month, races: mRaces } = byMonth[key];
+    const mm = String(month).padStart(2,'0');
+    html += `<div class="timeline-section">
+      <div class="month-label">
+        <div class="month-num">${mm}</div>
+        <div class="month-kr">${MONTH_NAMES[month]} · ${year}</div>
+      </div>`;
+    const shownSameDay = new Set();
+    mRaces.forEach((race, i) => {
+      const d = parseDate(race['대회일']);
+      const dayKey = d ? `${d.month}-${d.day}` : null;
+      const isSame = hasSameDay(mRaces, i);
+      let showNote = false;
+      if (isSame && dayKey && !shownSameDay.has(dayKey)) {
+        const lastIdx = mRaces.reduce((acc, r, j) => {
+          const rd = parseDate(r['대회일']);
+          return (rd && `${rd.month}-${rd.day}` === dayKey) ? j : acc;
+        }, -1);
+        if (i === lastIdx) { showNote = true; shownSameDay.add(dayKey); }
+      }
+      html += cardHTML(race, showNote);
+    });
+    html += `</div>`;
+  });
+  document.getElementById('content').innerHTML = html;
+}
+
+function applyFilter(filter) {
+  document.querySelectorAll('.race-card').forEach(card => {
+    const status = card.dataset.status;
+    const type = card.dataset.type;
+    const rec = card.dataset.rec === 'true';
+    const dist = card.dataset.dist || '';
+    let show = true;
+    if (filter === '접수중')   show = status === '접수중';
+    if (filter === '접수예정') show = status === '접수예정';
+    if (filter === '마감')     show = status === '마감';
+    if (filter === '연유추천') show = rec;
+    if (filter === '풀')       show = dist.includes('42');
+    if (filter === '하프')     show = dist.includes('21');
+    if (filter === '트레일')   show = type.includes('트레일');
+    card.classList.toggle('hidden', !show);
+    const note = card.nextElementSibling;
+    if (note && note.classList.contains('same-day-note')) note.classList.toggle('hidden', !show);
+  });
+}
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applyFilter(btn.dataset.filter);
+  });
+});
+
+async function loadData() {
+  try {
+    const res = await fetch('/api/races');
+    if (!res.ok) throw new Error('fetch 실패');
+    const text = await res.text();
+    allRaces = parseCSV(text);
+    allRaces.sort((a, b) => new Date(a['대회일']||'9999') - new Date(b['대회일']||'9999'));
+    render(allRaces);
+    const now = new Date();
+    document.getElementById('update-time').textContent =
+      `마지막 업데이트 · ${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 · 데이터 출처: 구글 시트`;
+  } catch(e) {
+    document.getElementById('content').innerHTML = `<div class="error-msg">😅 데이터를 불러오지 못했어요<br>잠시 후 새로고침 해주세요</div>`;
+  }
+}
+
+loadData();
+</script>
+</body>
+</html>
