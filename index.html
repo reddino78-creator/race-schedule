@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>마라톤 대회 일정</title>
+<title>일산호수마라톤클럽 대회 일정</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -135,9 +135,11 @@
   .card-body { flex: 1; padding: 12px 14px; }
   .card-tags { display: flex; gap: 5px; margin-bottom: 6px; flex-wrap: wrap; }
   .tag { font-size: 9px; padding: 2px 7px; border-radius: 10px; font-weight: 500; letter-spacing: 0.5px; }
-  .tag-dist { background: #e8f0e8; color: var(--accent2); border: 1px solid #c8dcc8; }
-  .tag-type { background: #f5ece8; color: var(--accent); border: 1px solid #e8d0c8; }
-  .tag-rec  { background: #1a1208; color: var(--bg); }
+  .tag-dist     { background: #e8f0e8; color: var(--accent2); border: 1px solid #c8dcc8; }
+  .tag-type     { background: #f5ece8; color: var(--accent); border: 1px solid #e8d0c8; }
+  .tag-practice { background: #e8f0e8; color: #2a6a2a; border: 1px solid #a0c8a0; }
+  .tag-course   { background: #e8eef8; color: #2a4a8a; border: 1px solid #a0b8e0; }
+  .tag-major    { background: #2a1a08; color: #f5d070; border: none; }
 
   .race-name { font-family: 'Noto Serif KR', serif; font-size: 15px; font-weight: 700; line-height: 1.3; margin-bottom: 5px; }
   .race-meta { font-size: 11px; color: var(--muted); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
@@ -198,7 +200,9 @@
   <button class="filter-btn" data-filter="접수중">접수중</button>
   <button class="filter-btn" data-filter="접수예정">접수예정</button>
   <button class="filter-btn" data-filter="마감">마감</button>
-  <button class="filter-btn" data-filter="연유추천">🐢 연유추천</button>
+  <button class="filter-btn" data-filter="연습">🏃 연습</button>
+  <button class="filter-btn" data-filter="코스">🗺 코스</button>
+  <button class="filter-btn" data-filter="메이저">🏆 메이저</button>
   <button class="filter-btn" data-filter="풀">풀마라톤</button>
   <button class="filter-btn" data-filter="하프">하프</button>
   <button class="filter-btn" data-filter="트레일">트레일</button>
@@ -306,17 +310,20 @@ function regInfoHTML(race, status) {
 
 function cardHTML(race, showSameDayNote) {
   const date = parseDate(race['대회일']);
-  const isRec = race['연유추천'] === 'TRUE';
+  const rec = race['연유추천'] || '';
   const cardState = getCardState(race);
   const link = race['홈페이지'] || '';
   const timeLimit = race['제한시간'] || '';
   const dayNum = date ? String(date.day).padStart(2,'0') : '--';
   const dayName = date ? date.dayName : race['요일'] || '';
 
+  const rec = race['연유추천'] || '';
   const tags = [];
   if (race['거리태그']) tags.push(`<span class="tag tag-dist">${race['거리태그']}</span>`);
   if (race['유형'])     tags.push(`<span class="tag tag-type">${race['유형']}</span>`);
-  if (isRec)            tags.push(`<span class="tag tag-rec">🐢 연유추천</span>`);
+  if (rec === '연습')   tags.push(`<span class="tag tag-practice">🏃 연습</span>`);
+  if (rec === '코스')   tags.push(`<span class="tag tag-course">🗺 코스</span>`);
+  if (rec === '메이저') tags.push(`<span class="tag tag-major">🏆 메이저</span>`);
 
   // 대회종료면 클릭 불가, 나머지는 링크 있으면 이동
   let actionBtn;
@@ -333,8 +340,8 @@ function cardHTML(race, showSameDayNote) {
   const sameDayNote = showSameDayNote ? `<div class="same-day-note">⚠ 같은 날 열리는 대회가 있어요</div>` : '';
 
   return `
-    <div class="race-card ${cardState} ${isRec && cardState !== 'race-ended' ? 'recommended' : ''}"
-         data-state="${cardState}" data-type="${race['유형'] || ''}" data-rec="${isRec}"
+    <div class="race-card ${cardState} ${rec && cardState !== 'race-ended' ? 'recommended' : ''}"
+         data-state="${cardState}" data-type="${race['유형'] || ''}" data-rec="${rec}"
          data-dist="${race['거리태그'] || ''}">
       <div class="card-left">
         <div class="day-num">${dayNum}</div>
@@ -414,13 +421,15 @@ function applyFilter(filter) {
   document.querySelectorAll('.race-card').forEach(card => {
     const state = card.dataset.state;
     const type = card.dataset.type;
-    const rec = card.dataset.rec === 'true';
+    const rec = card.dataset.rec || '';
     const dist = card.dataset.dist || '';
     let show = true;
     if (filter === '접수중')   show = state === 'open';
     if (filter === '접수예정') show = state === 'upcoming';
     if (filter === '마감')     show = state === 'reg-closed' || state === 'race-ended';
-    if (filter === '연유추천') show = rec;
+    if (filter === '연습')     show = rec === '연습';
+    if (filter === '코스')     show = rec === '코스';
+    if (filter === '메이저')   show = rec === '메이저';
     if (filter === '풀')       show = dist.includes('42');
     if (filter === '하프')     show = dist.includes('21');
     if (filter === '트레일')   show = type.includes('트레일');
