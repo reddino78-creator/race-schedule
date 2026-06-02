@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>일산호수마라톤클럽 대회 일정</title>
+<title>마라톤 대회 일정</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -92,6 +92,9 @@
   .month-label .month-kr { font-size: 13px; color: var(--muted); font-weight: 300; }
   .month-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
+  /* ── 카드 3단계 상태 ── */
+
+  /* 1. 접수중 - 살아있음 */
   .race-card {
     background: var(--card); border: 1px solid var(--border);
     border-radius: 12px; margin-bottom: 10px; overflow: hidden;
@@ -99,7 +102,27 @@
   }
   .race-card:active { transform: scale(0.98); }
   .race-card.recommended .card-left { background: var(--accent2); }
-  .race-card.ended { opacity: 0.5; }
+
+  /* 2. 접수마감 - 대회는 아직 */
+  .race-card.reg-closed {
+    background: #f7f3ee;
+    border-color: #c8bfb0;
+  }
+  .race-card.reg-closed .card-left { background: #9e8e7a; }
+  .race-card.reg-closed .race-name { color: #5a4a3a; }
+  .race-card.reg-closed .recommended .card-left { background: #5a7a55; }
+
+  /* 3. 대회종료 - 완전히 끝남 */
+  .race-card.race-ended {
+    background: #f0f0f0;
+    border-color: #ddd;
+    pointer-events: none;
+  }
+  .race-card.race-ended .card-left { background: #bbb; }
+  .race-card.race-ended .race-name { color: #999; }
+  .race-card.race-ended .race-meta { color: #bbb; }
+  .race-card.race-ended .reg-info { color: #bbb; }
+  .race-card.race-ended .card-tags { opacity: 0.4; }
 
   .card-left {
     width: 56px; flex-shrink: 0; background: var(--muted);
@@ -121,10 +144,32 @@
   .reg-info { margin-top: 6px; font-size: 10px; color: var(--muted); }
 
   .reg-status { position: absolute; top: 10px; right: 48px; }
-  .reg-badge { font-size: 9px; padding: 3px 8px; border-radius: 10px; font-weight: 700; letter-spacing: 0.5px; }
-  .reg-badge.open   { background: #e8f5e8; color: var(--accent2); border: 1px solid var(--accent2); }
-  .reg-badge.closed { background: #f0f0f0; color: #999; border: 1px solid #ddd; }
-  .reg-badge.ended  { background: #f0f0f0; color: #bbb; border: 1px solid #e0e0e0; }
+  .reg-badge { font-size: 10px; padding: 4px 10px; border-radius: 10px; font-weight: 700; letter-spacing: 0.5px; }
+  /* 접수중 - 눈에 확 띄게 */
+  .reg-badge.open {
+    background: var(--accent2);
+    color: white;
+    border: none;
+    box-shadow: 0 2px 6px rgba(58,107,53,0.4);
+  }
+  /* 접수마감 */
+  .reg-badge.reg-closed {
+    background: #fff0e0;
+    color: #a05000;
+    border: 1px solid #e0a060;
+  }
+  /* 대회종료 */
+  .reg-badge.race-ended {
+    background: #e8e8e8;
+    color: #aaa;
+    border: 1px solid #ddd;
+  }
+  /* 접수예정 */
+  .reg-badge.upcoming {
+    background: #e8eef8;
+    color: #3a5a9a;
+    border: 1px solid #a0b8e0;
+  }
 
   .card-action { display: flex; align-items: center; justify-content: center; padding: 0 12px; border-left: 1px solid var(--border); flex-shrink: 0; }
   .action-btn {
@@ -133,7 +178,7 @@
     font-size: 14px; text-decoration: none; transition: background 0.2s;
   }
   .action-btn:active { background: var(--accent); }
-  .action-btn.no-link { background: var(--border); cursor: default; pointer-events: none; }
+  .action-btn.no-link { background: #ddd; cursor: default; pointer-events: none; color: #bbb; }
 
   .same-day-note { font-size: 10px; color: var(--accent); padding: 2px 14px 10px 70px; }
   .update-time { text-align: center; font-size: 10px; color: var(--muted); padding: 24px 20px; letter-spacing: 1px; }
@@ -217,6 +262,25 @@ function parseDate(dateStr) {
   return { year: d.getFullYear(), month: d.getMonth()+1, day: d.getDate(), dayName: DAY_NAMES[d.getDay()] };
 }
 
+// 오늘 기준으로 카드 상태 판단
+function getCardState(race) {
+  const date = parseDate(race['대회일']);
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  // 대회일이 있고 이미 지났으면 → 대회종료
+  if (date) {
+    const raceDate = new Date(date.year, date.month-1, date.day);
+    if (raceDate < today) return 'race-ended';
+  }
+
+  // 접수 상태 기준
+  const status = normalizeStatus(race['접수 상태'] || '');
+  if (status === '마감') return 'reg-closed';
+  if (status === '접수중') return 'open';
+  return 'upcoming';
+}
+
 // 시트의 '접수 종료'를 내부적으로 '마감'으로 통일
 function normalizeStatus(raw) {
   if (!raw) return '접수예정';
@@ -225,10 +289,11 @@ function normalizeStatus(raw) {
   return raw;
 }
 
-function badgeHTML(status) {
-  if (status === '접수중') return `<span class="reg-badge open">접수중</span>`;
-  if (status === '마감')   return `<span class="reg-badge ended">마감</span>`;
-  return `<span class="reg-badge closed">접수예정</span>`;
+function badgeHTML(cardState) {
+  if (cardState === 'open')       return `<span class="reg-badge open">✅ 접수중</span>`;
+  if (cardState === 'reg-closed') return `<span class="reg-badge reg-closed">🔒 접수마감</span>`;
+  if (cardState === 'race-ended') return `<span class="reg-badge race-ended">종료</span>`;
+  return `<span class="reg-badge upcoming">📅 접수예정</span>`;
 }
 
 function regInfoHTML(race, status) {
@@ -242,8 +307,7 @@ function regInfoHTML(race, status) {
 function cardHTML(race, showSameDayNote) {
   const date = parseDate(race['대회일']);
   const isRec = race['연유추천'] === 'TRUE';
-  const rawStatus = race['접수 상태'] || '';
-  const status = normalizeStatus(rawStatus);
+  const cardState = getCardState(race);
   const link = race['홈페이지'] || '';
   const timeLimit = race['제한시간'] || '';
   const dayNum = date ? String(date.day).padStart(2,'0') : '--';
@@ -254,17 +318,23 @@ function cardHTML(race, showSameDayNote) {
   if (race['유형'])     tags.push(`<span class="tag tag-type">${race['유형']}</span>`);
   if (isRec)            tags.push(`<span class="tag tag-rec">🐢 연유추천</span>`);
 
-  const actionBtn = link && !link.includes('러너블') && link.startsWith('http')
-    ? `<a href="${link}" target="_blank" class="action-btn">→</a>`
-    : link === '러너블'
-      ? `<a href="https://www.runnble.com" target="_blank" class="action-btn">→</a>`
-      : `<span class="action-btn no-link">→</span>`;
+  // 대회종료면 클릭 불가, 나머지는 링크 있으면 이동
+  let actionBtn;
+  if (cardState === 'race-ended') {
+    actionBtn = `<span class="action-btn no-link">✕</span>`;
+  } else if (link === '러너블') {
+    actionBtn = `<a href="https://www.runnble.com" target="_blank" class="action-btn">→</a>`;
+  } else if (link && link.startsWith('http')) {
+    actionBtn = `<a href="${link}" target="_blank" class="action-btn">→</a>`;
+  } else {
+    actionBtn = `<span class="action-btn no-link">→</span>`;
+  }
 
   const sameDayNote = showSameDayNote ? `<div class="same-day-note">⚠ 같은 날 열리는 대회가 있어요</div>` : '';
 
   return `
-    <div class="race-card ${isRec ? 'recommended' : ''} ${status === '마감' ? 'ended' : ''}"
-         data-status="${status}" data-type="${race['유형'] || ''}" data-rec="${isRec}"
+    <div class="race-card ${cardState} ${isRec && cardState !== 'race-ended' ? 'recommended' : ''}"
+         data-state="${cardState}" data-type="${race['유형'] || ''}" data-rec="${isRec}"
          data-dist="${race['거리태그'] || ''}">
       <div class="card-left">
         <div class="day-num">${dayNum}</div>
@@ -278,9 +348,9 @@ function cardHTML(race, showSameDayNote) {
           <span>🏃 ${race['종목'] || ''}</span>
           ${timeLimit && timeLimit !== '없음' ? `<span>⏱ ${timeLimit}</span>` : ''}
         </div>
-        <div class="reg-info">${regInfoHTML(race, status)}</div>
+        <div class="reg-info">${regInfoHTML(race, normalizeStatus(race['접수 상태']||''))}</div>
       </div>
-      <div class="reg-status">${badgeHTML(status)}</div>
+      <div class="reg-status">${badgeHTML(cardState)}</div>
       <div class="card-action">${actionBtn}</div>
     </div>
     ${sameDayNote}
@@ -342,14 +412,14 @@ function render(races) {
 
 function applyFilter(filter) {
   document.querySelectorAll('.race-card').forEach(card => {
-    const status = card.dataset.status; // 이미 normalize된 값
+    const state = card.dataset.state;
     const type = card.dataset.type;
     const rec = card.dataset.rec === 'true';
     const dist = card.dataset.dist || '';
     let show = true;
-    if (filter === '접수중')   show = status === '접수중';
-    if (filter === '접수예정') show = status === '접수예정';
-    if (filter === '마감')     show = status === '마감';
+    if (filter === '접수중')   show = state === 'open';
+    if (filter === '접수예정') show = state === 'upcoming';
+    if (filter === '마감')     show = state === 'reg-closed' || state === 'race-ended';
     if (filter === '연유추천') show = rec;
     if (filter === '풀')       show = dist.includes('42');
     if (filter === '하프')     show = dist.includes('21');
