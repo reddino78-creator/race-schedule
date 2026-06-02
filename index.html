@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>일산호수마라톤클럽 대회 일정</title>
+<title>마라톤클럽 대회 일정</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐢</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -186,13 +186,93 @@
   .same-day-note { font-size: 10px; color: var(--accent); padding: 2px 14px 10px 70px; }
   .update-time { text-align: center; font-size: 10px; color: var(--muted); padding: 24px 20px; letter-spacing: 1px; }
   .hidden { display: none !important; }
+
+  /* ── 메인 배너 ── */
+  .banner-section {
+    padding: 16px 20px 8px;
+  }
+  .banner-label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .banner-slider {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+  }
+  .banner-slider::-webkit-scrollbar { display: none; }
+  .banner-card {
+    flex-shrink: 0;
+    width: 280px;
+    height: 140px;
+    border-radius: 14px;
+    overflow: hidden;
+    position: relative;
+    text-decoration: none;
+    display: block;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  .banner-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .banner-card .banner-overlay {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 28px 14px 12px;
+    background: linear-gradient(to top, rgba(0,0,0,0.75), transparent);
+  }
+  .banner-card .banner-name {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 15px;
+    font-weight: 900;
+    color: white;
+    line-height: 1.2;
+    margin-bottom: 3px;
+  }
+  .banner-card .banner-meta {
+    font-size: 10px;
+    color: rgba(255,255,255,0.75);
+    display: flex;
+    gap: 8px;
+  }
+  .banner-card .banner-badge {
+    position: absolute;
+    top: 10px; right: 10px;
+    font-size: 9px;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-weight: 700;
+    background: var(--accent2);
+    color: white;
+  }
+  .banner-dots {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    margin-top: 10px;
+  }
+  .banner-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: background 0.2s;
+  }
+  .banner-dot.active { background: var(--accent); }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="header-label">🐢 일산호수마라톤클럽</div>
-  <div class="header-title">2025 대회 일정</div>
+  <div class="header-label">🐢 거북팀</div>
+  <div class="header-title">2026 추천 대회 일정</div>
   <div class="header-sub">접수일 · 대회일 · 연유추천 한눈에</div>
 </header>
 
@@ -207,6 +287,12 @@
   <button class="filter-btn" data-filter="풀">풀마라톤</button>
   <button class="filter-btn" data-filter="하프">하프</button>
   <button class="filter-btn" data-filter="트레일">트레일</button>
+</div>
+
+<div id="banner-section" class="banner-section" style="display:none">
+  <div class="banner-label">🏁 추천 대회</div>
+  <div class="banner-slider" id="banner-slider"></div>
+  <div class="banner-dots" id="banner-dots"></div>
 </div>
 
 <div class="info-banner">
@@ -462,6 +548,59 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
   });
 });
 
+const GITHUB_RAW = 'https://raw.githubusercontent.com/reddino78-creator/race-schedule/main/images/';
+
+function renderBanners(races) {
+  const bannerRaces = races.filter(r => r['메인배너'] && r['메인배너'].trim());
+  if (!bannerRaces.length) return;
+
+  const section = document.getElementById('banner-section');
+  const slider = document.getElementById('banner-slider');
+  const dots = document.getElementById('banner-dots');
+  section.style.display = 'block';
+
+  slider.innerHTML = bannerRaces.map(race => {
+    const cardState = getCardState(race);
+    const link = race['홈페이지'] || '';
+    const normalizedLink = link
+      ? (link.startsWith('http') ? link : 'https://' + link)
+      : '#';
+    const imgUrl = GITHUB_RAW + race['메인배너'].trim();
+    const date = parseDate(race['대회일']);
+    const dateStr = date ? `${date.month}월 ${date.day}일` : '';
+    const badgeText = cardState === 'open' ? '✅ 접수중'
+                    : cardState === 'reg-closed' ? '🔒 접수마감'
+                    : cardState === 'race-ended' ? '종료' : '📅 접수예정';
+
+    return `
+      <a href="${normalizedLink}" target="_blank" class="banner-card">
+        <img src="${imgUrl}" alt="${race['대회명']}" onerror="this.parentElement.style.background='#2a1a08';this.style.display='none'">
+        <div class="banner-overlay">
+          <div class="banner-name">${race['대회명']}</div>
+          <div class="banner-meta">
+            <span>📍 ${race['장소'] || ''}</span>
+            ${dateStr ? `<span>📅 ${dateStr}</span>` : ''}
+          </div>
+        </div>
+        <div class="banner-badge">${badgeText}</div>
+      </a>
+    `;
+  }).join('');
+
+  // 도트 표시
+  dots.innerHTML = bannerRaces.map((_, i) =>
+    `<div class="banner-dot ${i === 0 ? 'active' : ''}"></div>`
+  ).join('');
+
+  // 스크롤시 도트 업데이트
+  slider.addEventListener('scroll', () => {
+    const idx = Math.round(slider.scrollLeft / 292);
+    dots.querySelectorAll('.banner-dot').forEach((d, i) =>
+      d.classList.toggle('active', i === idx)
+    );
+  });
+}
+
 async function loadData() {
   try {
     const res = await fetch('/api/races');
@@ -476,6 +615,7 @@ async function loadData() {
       return new Date(da.year, da.month-1, da.day) - new Date(db.year, db.month-1, db.day);
     });
     if (allRaces.length === 0) throw new Error('데이터 없음');
+    renderBanners(allRaces);
     render(allRaces);
     const now = new Date();
     document.getElementById('update-time').textContent =
