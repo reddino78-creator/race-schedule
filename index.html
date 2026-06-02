@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>일산호수마라톤클럽 대회 일정</title>
+<title>대회 일정</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -288,9 +288,12 @@ function getCardState(race) {
 // 시트의 '접수 종료'를 내부적으로 '마감'으로 통일
 function normalizeStatus(raw) {
   if (!raw) return '접수예정';
-  if (raw.includes('종료')) return '마감';
-  if (raw.includes('접수중')) return '접수중';
-  return raw;
+  const s = raw.trim();
+  if (s.includes('종료')) return '마감';
+  if (s.includes('접수중')) return '접수중';
+  if (s.includes('접수 중')) return '접수중';
+  if (s.includes('예정')) return '접수예정';
+  return '접수예정';
 }
 
 function badgeHTML(cardState) {
@@ -372,9 +375,14 @@ function render(races) {
   const byMonth = {};
   races.forEach(race => {
     const date = parseDate(race['대회일']);
-    if (!date) return;
-    const key = `${date.year}-${String(date.month).padStart(2,'0')}`;
-    if (!byMonth[key]) byMonth[key] = { year: date.year, month: date.month, races: [] };
+    const key = date
+      ? `${date.year}-${String(date.month).padStart(2,'0')}`
+      : '9999-99';
+    if (!byMonth[key]) byMonth[key] = {
+      year: date ? date.year : 9999,
+      month: date ? date.month : 99,
+      races: []
+    };
     byMonth[key].races.push(race);
   });
 
@@ -391,11 +399,12 @@ function render(races) {
   let html = '';
   Object.keys(byMonth).sort().forEach(key => {
     const { year, month, races: mRaces } = byMonth[key];
-    const mm = String(month).padStart(2,'0');
+    const mm = month === 99 ? '??' : String(month).padStart(2,'0');
+    const monthKr = month === 99 ? '일정 미정' : `${MONTH_NAMES[month]} · ${year}`;
     html += `<div class="timeline-section">
       <div class="month-label">
         <div class="month-num">${mm}</div>
-        <div class="month-kr">${MONTH_NAMES[month]} · ${year}</div>
+        <div class="month-kr">${monthKr}</div>
       </div>`;
     const shownSameDay = new Set();
     mRaces.forEach((race, i) => {
@@ -460,12 +469,14 @@ async function loadData() {
       if (!db) return -1;
       return new Date(da.year, da.month-1, da.day) - new Date(db.year, db.month-1, db.day);
     });
+    if (allRaces.length === 0) throw new Error('데이터 없음');
     render(allRaces);
     const now = new Date();
     document.getElementById('update-time').textContent =
       `마지막 업데이트 · ${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 · 데이터 출처: 구글 시트`;
   } catch(e) {
-    document.getElementById('content').innerHTML = `<div class="error-msg">😅 데이터를 불러오지 못했어요<br>잠시 후 새로고침 해주세요</div>`;
+    console.error('loadData 에러:', e);
+    document.getElementById('content').innerHTML = `<div class="error-msg">😅 데이터를 불러오지 못했어요 (${e.message})<br>잠시 후 새로고침 해주세요</div>`;
   }
 }
 
