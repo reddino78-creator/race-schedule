@@ -202,9 +202,27 @@ function parseCSV(text) {
 
 function parseDate(dateStr) {
   if (!dateStr) return null;
+  // 26.08.01~02 또는 26.08.01 형식 처리 (YY.MM.DD)
+  const dotMatch = dateStr.match(/^(\d{2})\.(\d{2})\.(\d{2})/);
+  if (dotMatch) {
+    const year = 2000 + parseInt(dotMatch[1]);
+    const month = parseInt(dotMatch[2]);
+    const day = parseInt(dotMatch[3]);
+    const d = new Date(year, month - 1, day);
+    return { year, month, day, dayName: DAY_NAMES[d.getDay()] };
+  }
+  // YYYY-MM-DD 형식
   const d = new Date(dateStr);
   if (isNaN(d)) return null;
   return { year: d.getFullYear(), month: d.getMonth()+1, day: d.getDate(), dayName: DAY_NAMES[d.getDay()] };
+}
+
+// 시트의 '접수 종료'를 내부적으로 '마감'으로 통일
+function normalizeStatus(raw) {
+  if (!raw) return '접수예정';
+  if (raw.includes('종료')) return '마감';
+  if (raw.includes('접수중')) return '접수중';
+  return raw;
 }
 
 function badgeHTML(status) {
@@ -213,33 +231,34 @@ function badgeHTML(status) {
   return `<span class="reg-badge closed">접수예정</span>`;
 }
 
-function regInfoHTML(race) {
-  const status = race['접수상태'] || '';
-  const startDate = race['접수시작일'] || '';
-  const expectDate = race['접수예정일'] || '';
-  if (status === '접수중' && startDate)   return `📅 접수 중 · 시작일 ${startDate}`;
-  if (status === '접수예정' && expectDate) return `📅 접수 예정 · ${expectDate} 오픈`;
-  if (status === '마감') return `✅ 접수 마감`;
+function regInfoHTML(race, status) {
+  const startDate = race['접수 시작일'] || '';
+  if (status === '접수중' && startDate && !startDate.includes('접수'))
+    return `📅 접수 중 · 시작일 ${startDate}`;
+  if (status === '마감') return `✅ 접수 종료`;
   return '';
 }
 
 function cardHTML(race, showSameDayNote) {
   const date = parseDate(race['대회일']);
   const isRec = race['연유추천'] === 'TRUE';
-  const status = race['접수상태'] || '';
-  const link = race['접수링크'] || '';
-  const note = race['비고'] || '';
+  const rawStatus = race['접수 상태'] || '';
+  const status = normalizeStatus(rawStatus);
+  const link = race['홈페이지'] || '';
+  const timeLimit = race['제한시간'] || '';
   const dayNum = date ? String(date.day).padStart(2,'0') : '--';
-  const dayName = date ? date.dayName : '';
+  const dayName = date ? date.dayName : race['요일'] || '';
 
   const tags = [];
   if (race['거리태그']) tags.push(`<span class="tag tag-dist">${race['거리태그']}</span>`);
   if (race['유형'])     tags.push(`<span class="tag tag-type">${race['유형']}</span>`);
   if (isRec)            tags.push(`<span class="tag tag-rec">🐢 연유추천</span>`);
 
-  const actionBtn = link
+  const actionBtn = link && !link.includes('러너블') && link.startsWith('http')
     ? `<a href="${link}" target="_blank" class="action-btn">→</a>`
-    : `<span class="action-btn no-link">→</span>`;
+    : link === '러너블'
+      ? `<a href="https://www.runnble.com" target="_blank" class="action-btn">→</a>`
+      : `<span class="action-btn no-link">→</span>`;
 
   const sameDayNote = showSameDayNote ? `<div class="same-day-note">⚠ 같은 날 열리는 대회가 있어요</div>` : '';
 
@@ -257,9 +276,9 @@ function cardHTML(race, showSameDayNote) {
         <div class="race-meta">
           <span>📍 ${race['장소'] || ''}</span>
           <span>🏃 ${race['종목'] || ''}</span>
+          ${timeLimit && timeLimit !== '없음' ? `<span>⏱ ${timeLimit}</span>` : ''}
         </div>
-        <div class="reg-info">${regInfoHTML(race)}</div>
-        ${note ? `<div class="reg-info" style="color:var(--accent)">📌 ${note}</div>` : ''}
+        <div class="reg-info">${regInfoHTML(race, status)}</div>
       </div>
       <div class="reg-status">${badgeHTML(status)}</div>
       <div class="card-action">${actionBtn}</div>
@@ -323,7 +342,7 @@ function render(races) {
 
 function applyFilter(filter) {
   document.querySelectorAll('.race-card').forEach(card => {
-    const status = card.dataset.status;
+    const status = card.dataset.status; // 이미 normalize된 값
     const type = card.dataset.type;
     const rec = card.dataset.rec === 'true';
     const dist = card.dataset.dist || '';
@@ -355,7 +374,13 @@ async function loadData() {
     if (!res.ok) throw new Error('fetch 실패');
     const text = await res.text();
     allRaces = parseCSV(text);
-    allRaces.sort((a, b) => new Date(a['대회일']||'9999') - new Date(b['대회일']||'9999'));
+    allRaces.sort((a, b) => {
+      const da = parseDate(a['대회일']);
+      const db = parseDate(b['대회일']);
+      if (!da) return 1;
+      if (!db) return -1;
+      return new Date(da.year, da.month-1, da.day) - new Date(db.year, db.month-1, db.day);
+    });
     render(allRaces);
     const now = new Date();
     document.getElementById('update-time').textContent =
