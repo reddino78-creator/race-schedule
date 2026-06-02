@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>대회 일정</title>
+<title>일산호수마라톤클럽 대회 일정</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐢</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -313,7 +314,6 @@ function regInfoHTML(race, status) {
 
 function cardHTML(race, showSameDayNote) {
   const date = parseDate(race['대회일']);
-  const rec = race['연유추천'] || '';
   const cardState = getCardState(race);
   const link = race['홈페이지'] || '';
   const timeLimit = race['제한시간'] || '';
